@@ -1,0 +1,186 @@
+pipeline {
+    agent any
+    options {
+        timeout(time: 10, unit: 'MINUTES')
+    }
+
+    parameters {
+        choice(name: 'DEPLOYMENT_ACTION', choices: ['', 'Monolithic_Deployment', 'Microservice_Deployment', 'All_Deployments'], description: 'Select Your Preffered Deployment Type')
+        string(name: 'SECRETS_ARN', description: 'The ARN of Your Secret In Secrets Manager. Optional If DEPLOYMENT_ACTION = Microservice_Deployment Eg : arn:aws:secretsmanager:us-east-1:710589867007:secret:nexus_login_credentials-3y25QH')
+        string(name: 'DOCKER_IMAGE', description: 'Existing Docker Image To Be Deployed From Your DockerHub Registry.Optional If DEPLOYMENT_ACTION = Monolithic_Deployment  Eg: ityourway/springboot-app-ci-cd:V004')
+        string(name: 'CONTAINER_NAME', description: 'Your Preffered Name For Container To Be Created. Optional If DEPLOYMENT_ACTION = Monolithic_Deployment')
+        string(name: 'JAR_FILE_NAME', description: 'Name Of The Existing Jar File In Nexus To be Deployed. Optional If DEPLOYMENT_ACTION = Microservice_Deployment Eg : blog-0.0.1-20240606.064611-3.jar')
+        string(name: 'NEXUS_JAR_FILE_URL', description: 'URL Of The Existing Jar File In Nexus To be Deployed. Optional If DEPLOYMENT_ACTION = Microservice_Deployment. Eg : http://44.204.99.33:8081/repository/maven-snapshots/com/app/blog/0.0.1-SNAPSHOT/blog-0.0.1-20240606.064611-3.jar')
+        string(name: 'REMOTE_USER', defaultValue: 'ec2-user', description: 'Remote server username. Mandatory Field')
+        string(name: 'MICROSERVICE_SERVER', defaultValue: 'microservice_server', description: 'The microservice server that Jenkins will SSH into Using Publish Over SSH. Optional If DEPLOYMENT_ACTION = Monolithic_Deployment')
+        string(name: 'MONOLITHIC_SERVER', defaultValue: 'monolithic_server', description: 'The monolithic server that Jenkins will SSH into Using Publish Over SSH. Optional If DEPLOYMENT_ACTION = Microservice_Deployment')
+    }
+
+    environment {
+        DEPLOYMENT_ACTION = "${params.DEPLOYMENT_ACTION}"
+        DOCKER_IMAGE = "${params.DOCKER_IMAGE}"
+        CONTAINER_NAME = "${params.CONTAINER_NAME}"
+        JAR_FILE_NAME = "${params.JAR_FILE_NAME}"
+        NEXUS_JAR_FILE_URL = "${params.NEXUS_JAR_FILE_URL}"
+        REMOTE_USER = "${params.REMOTE_USER}"
+        MICROSERVICE_SERVER = "${params.MICROSERVICE_SERVER}"
+        MONOLITHIC_SERVER = "${params.MONOLITHIC_SERVER}"
+        SECRETS_ARN = "${params.SECRETS_ARN}"
+    }
+
+    stages {
+        
+        stage("Validate Parameters") {
+            steps {
+                script {
+                    try {
+                        // List of required parameters
+                        def requiredParameters = ['DEPLOYMENT_ACTION', 'REMOTE_USER']
+                        
+                        // Check each required parameter
+                        for (param in requiredParameters) {
+                            if (!params.containsKey(param) || params[param].trim() == "") {
+                                error("Parameter '${param}' is missing or empty. Please provide a value.")
+                            }
+                        }
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
+            }
+        }   
+
+        stage('Deploy To Microservice Server') {
+            when {
+                expression { params.DEPLOYMENT_ACTION == "All_Deployments" || params.DEPLOYMENT_ACTION == "Microservice_Deployment" }
+            }
+            steps {
+                script {
+                   def deployCommand = '''
+    set -ex
+    mkdir -p /home/${REMOTE_USER}/deployment
+    echo 'version: "3.9"
+
+services:
+  blog-application:
+    image: ${DOCKER_IMAGE}
+    container_name: ${CONTAINER_NAME}
+    ports:
+      - "8081:8081"' > /home/${REMOTE_USER}/deployment/docker-compose.yml
+      
+    cd /home/${REMOTE_USER}/deployment/
+    
+    sudo docker rm -f ${CONTAINER_NAME}
+    
+    sudo /usr/local/bin/docker-compose down 
+    
+    echo 'Removed old container'
+    sleep 3
+    echo 'Starting a new container with the image ${DOCKER_IMAGE}'
+    sudo /usr/local/bin/docker-compose up -d
+'''
+
+
+                    sshPublisher(publishers: [sshPublisherDesc(
+                        configName: env.MICROSERVICE_SERVER,
+                        transfers: [sshTransfer(
+                            cleanRemote: false,
+                            execCommand: deployCommand,
+                            execTimeout: 120000,
+                            flatten: false,
+                            makeEmptyDirs: false,
+                            noDefaultExcludes: false,
+                            patternSeparator: '[, ]+',
+                            remoteDirectory: '',
+                            remoteDirectorySDF: false,
+                            removePrefix: '',
+                            sourceFiles: ''
+                        )],
+                        usePromotionTimestamp: false,
+                        useWorkspaceInPromotion: false,
+                        verbose: true
+                    )])
+                }
+            }
+        }
+
+        stage('Deploy To Monolithic Server') {
+            when {
+                expression { params.DEPLOYMENT_ACTION == "All_Deployments" || params.DEPLOYMENT_ACTION == "Monolithic_Deployment" }
+            }
+            steps {
+                script {
+                   def Command = '''
+                    set -ex
+                    
+                    mkdir -p /home/${REMOTE_USER}/blog-app
+                    
+                    cd ~/blog-app/
+                    
+                    echo '#!/bin/bash
+                    # Check if any process is listening on port 8081 and kill it
+                    PID=$(/usr/sbin/lsof -t -i:8081)
+                    if [ -n "$PID" ]; then
+                        kill $PID || true
+                        echo "Killed process $PID"
+                    else
+                        echo "No process found listening on port 8081"
+                    fi
+                    
+                    # Export Variables To Retrieve Secrets from Secrets Manager
+                    export ARN="${SECRETS_ARN}"
+                    secret=$(aws secretsmanager get-secret-value --secret-id "${ARN}" --query "SecretString" --output=text)
+                    
+                    if [ $? -ne 0 ]; then
+                        echo "Failed to retrieve secrets"
+                        exit 1
+                    fi
+                    export NEXUS_USER=$(echo $secret | sed -n "s|.*\\\"NEXUS_USERNAME\\\":\\\"\\([^\\\"]*\\)\\\".*|\\1|p")
+                    export NEXUS_PASS=$(echo $secret | sed -n "s|.*\\\"NEXUS_PASSWORD\\\":\\\"\\([^\\\"]*\\)\\\".*|\\1|p")
+                    
+                    # Download And Run Desired Jar file
+                    curl -u "${NEXUS_USER}":"${NEXUS_PASS}" -O "${NEXUS_JAR_FILE_URL}"
+                    if [ $? -ne 0 ]; then
+                        echo "Failed to download JAR file"
+                        exit 1
+                    fi' > deployment.sh
+                    
+                    chmod +x deployment.sh
+                    
+                    cat deployment.sh
+                    
+                    ./deployment.sh
+                    
+                    java -jar "${JAR_FILE_NAME}" > logfile 2>&1 &
+                    if [ $? -ne 0 ]; then
+                        echo "Failed to start the application"
+                        cat logfile
+                        exit 1
+                    fi
+                    echo "Started new blog application"
+                    sleep 7
+                    cat logfile
+                    '''
+
+            sshPublisher(publishers: [sshPublisherDesc(
+                configName: env.MONOLITHIC_SERVER,
+                transfers: [sshTransfer(
+                    makeEmptyDirs: false,
+                    remoteDirectory: '',
+                    execCommand: Command,
+                    execTimeout: 120000,
+                    removePrefix: '',
+                    sourceFiles: ''
+                )],
+                usePromotionTimestamp: false,
+                useWorkspaceInPromotion: false,
+                verbose: true,
+            )])
+        }
+    }
+}
+
+  
+    }
+}

@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+    options {
+        timeout(time: 10, unit: 'MINUTES')
+    }
+
+    parameters {
+        string(name: 'GITHUB_CREDENTIAL', defaultValue: 'github_creds', description: 'Github access credentials id')
+        string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/ityourway/springboot-app-ci-cd.git', description: 'Github repository url')
+        string(name: 'GITHUB_BRANCH', defaultValue: 'main', description: 'Github branch for your build')
+        string(name: 'SONARQUBE_SERVER_NAME', defaultValue: 'sonarqube_server', description: 'Name for your sonarqube server')
+    }
+
+    environment {
+        GITHUB_CREDENTIAL = "${params.GITHUB_CREDENTIAL}"
+        GITHUB_REPO_URL = "${params.GITHUB_REPO_URL}"
+        GITHUB_BRANCH = "${params.GITHUB_BRANCH}"
+        SONARQUBE_SERVER_NAME = "${params.SONARQUBE_SERVER_NAME}"
+    }
+
+    stages {
+        
+        stage("Validate Parameters") {
+            steps {
+                script {
+                    // Check if required parameters are provided
+                    def requiredParameters = ['GITHUB_CREDENTIAL', 'GITHUB_REPO_URL', 'GITHUB_BRANCH', 'SONARQUBE_SERVER_NAME']
+                    for (param in requiredParameters) {
+                        if (!params.containsKey(param) || params[param].trim() == "") {
+                            error("Parameter '$param' is missing or empty. Please provide a value.")
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage("Checkout Code From GitHub") {
+            steps {
+                script {
+                    git branch: "${GITHUB_BRANCH}", credentialsId: "${GITHUB_CREDENTIAL}", url: "${GITHUB_REPO_URL}"
+                }
+            }
+        }
+
+        
+        stage('Application Build And Test') {
+            steps {
+                sh 'chmod +x ./mvnw'
+                sh './mvnw clean install'
+                sh './mvnw test'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    withSonarQubeEnv("${SONARQUBE_SERVER_NAME}") {
+                        sh './mvnw sonar:sonar'
+                    }
+                }
+            }
+        }
+       
+        
+
+    }
+}

@@ -1,0 +1,129 @@
+pipeline { 
+    agent any
+    options {
+        timeout(time: 10, unit: 'MINUTES')
+    }
+
+    parameters {
+        string(name: 'IMAGE_TAG', defaultValue: "${BUILD_ID}", description: 'Docker image tag')
+        string(name: 'DOCKER_IMAGE', defaultValue: 'ityourway/springboot-app-ci-cd', description: 'Docker image name')
+        string(name: 'CONTAINER_NAME', defaultValue: 'springboot-app', description: 'Docker container name')
+        string(name: 'REGISTRY', defaultValue: 'ityourway/springboot-app-ci-cd', description: 'Your Docker registry repository Name')
+        string(name: 'REGISTRY_CREDENTIAL', defaultValue: 'dockerhub-creds', description: 'Docker registry credentials id')
+        string(name: 'GITHUB_CREDENTIAL', defaultValue: 'github_creds', description: 'Github access credentials id')
+        string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/ityourway/springboot-app-ci-cd.git', description: 'Github repository url')
+        string(name: 'GITHUB_BRANCH', defaultValue: 'main', description: 'Github branch for your build')
+        string(name: 'SONARQUBE_SERVER_NAME', defaultValue: 'sonarqube_server', description: 'Name for your sonarqube server')
+        string(name: 'NEXUS_URL', defaultValue: '34.234.164.138:8081', description: 'Your Nexus URL')
+        string(name: 'NEXUS_CREDENTIAL', defaultValue: 'jenkins_nexus_creds', description: 'Your Nexus Credentials')
+    }
+
+    environment {
+        IMAGE_TAG = "${params.IMAGE_TAG}"
+        DOCKER_IMAGE = "${params.DOCKER_IMAGE}"
+        CONTAINER_NAME = "${params.CONTAINER_NAME}"
+        REGISTRY = "${params.REGISTRY}"
+        REGISTRY_CREDENTIAL = "${params.REGISTRY_CREDENTIAL}"
+        GITHUB_CREDENTIAL = "${params.GITHUB_CREDENTIAL}"
+        GITHUB_REPO_URL = "${params.GITHUB_REPO_URL}"
+        GITHUB_BRANCH = "${params.GITHUB_BRANCH}"
+        SONARQUBE_SERVER_NAME = "${params.SONARQUBE_SERVER_NAME}"
+        NEXUS_URL = "${params.NEXUS_URL}"
+        NEXUS_CREDENTIAL = "${params.NEXUS_CREDENTIAL}"
+    }
+
+    stages {
+        
+        stage("Validate Parameters") {
+            steps {
+                script {
+                    // Check if required parameters are provided
+                    def requiredParameters = ['IMAGE_TAG', 'DOCKER_IMAGE', 'CONTAINER_NAME', 'REGISTRY', 'REGISTRY_CREDENTIAL', 'GITHUB_CREDENTIAL', 'GITHUB_REPO_URL', 'GITHUB_BRANCH']
+                    for (param in requiredParameters) {
+                        if (!params.containsKey(param) || params[param].trim() == "") {
+                            error("Parameter '$param' is missing or empty. Please provide a value.")
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage("Checkout Code From GitHub") {
+            steps {
+                script {
+                    git branch: "${GITHUB_BRANCH}", credentialsId: "${GITHUB_CREDENTIAL}", url: "${GITHUB_REPO_URL}"
+                }
+            }
+        }
+
+        
+        stage('Application Build And Test') {
+            steps {
+                sh 'chmod +x ./mvnw'
+                sh './mvnw clean install'
+                sh './mvnw test'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    withSonarQubeEnv("${SONARQUBE_SERVER_NAME}") {
+                        sh './mvnw sonar:sonar'
+                    }
+                }
+            }
+        }
+        
+        stage('Upload Snapshot to Nexus Repository') {
+            steps {
+                script {
+                  def nexusUrl = "${NEXUS_URL}"
+                  def nexusCredentialsId = "${NEXUS_CREDENTIAL}"
+                  def groupId = 'com.app'
+                  def artifactId = 'blog'
+                  def version = '0.0.1-SNAPSHOT'
+                  def packaging = 'jar'
+
+                  def artifactPath = "target/${artifactId}-${version}.${packaging}"
+
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: nexusUrl,
+                    groupId: groupId,
+                    version: version,
+                    repository: 'maven-snapshots',
+                    credentialsId: nexusCredentialsId,
+                    artifacts: [
+                        [artifactId: artifactId,
+                         classifier: '',
+                         file: artifactPath,
+                         type: packaging,
+                         filename: "${artifactId}-${version}.${packaging}"]
+                    ]
+                )
+            }
+        }
+    }
+        
+        stage('Docker Build and Push') {
+            steps {
+                script {
+                    // Log in to Docker Registry
+                    docker.withRegistry('', REGISTRY_CREDENTIAL) {
+                       
+                        // Run your shell script with the IMAGE_TAG parameter
+                        sh """
+                        ./mvnw clean install
+                        docker rmi -f ${DOCKER_IMAGE}:V00${IMAGE_TAG} &>/dev/null && echo 'Removed old container'
+                        docker build -t ${DOCKER_IMAGE}:V00${IMAGE_TAG} .
+                        docker push ${DOCKER_IMAGE}:V00${IMAGE_TAG}
+                        """
+                    }
+                }
+            }
+        }
+
+    }
+}
