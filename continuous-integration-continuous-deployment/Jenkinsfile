@@ -183,7 +183,7 @@ services:
                        set -ex
                        cd ~/blog-app/
                 # Check if any process is listening on port 8081 and kill it
-                PID=$(/usr/sbin/lsof -t -i:8081)
+                PID=$(/usr/sbin/lsof -t -i:8081) || true
                 if [ -n "$PID" ]; then
                     kill $PID || true
                     echo "Killed process $PID"
