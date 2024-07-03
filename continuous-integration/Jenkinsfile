@@ -5,8 +5,8 @@ pipeline {
     }
 
     parameters {
-        string(name: 'GITHUB_CREDENTIAL', defaultValue: 'github_creds', description: 'Github access credentials id')
-        string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/ityourway/springboot-app-ci-cd.git', description: 'Github repository url')
+        string(name: 'GITHUB_CREDENTIAL', defaultValue: 'jenkins_github_creds', description: 'Github access credentials id')
+        string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/dupsy-hub/springboot-app-ci-cd.git', description: 'Github repository url')
         string(name: 'GITHUB_BRANCH', defaultValue: 'main', description: 'Github branch for your build')
         string(name: 'SONARQUBE_SERVER_NAME', defaultValue: 'sonarqube_server', description: 'Name for your sonarqube server')
     }

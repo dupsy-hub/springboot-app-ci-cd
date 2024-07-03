@@ -10,6 +10,12 @@
     "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
     "branch": "main",
     "jenkinsfile": "ansible/Jenkinsfile"
+  },
+  {
+    "name": "continuous-integration-pipeline",
+    "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
+    "branch": "main",
+    "jenkinsfile": "continuous-integration/Jenkinsfile"
   }
   
 ]
