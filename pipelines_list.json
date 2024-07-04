@@ -4,5 +4,11 @@
     "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
     "branch": "main",
     "jenkinsfile": "terraform/Jenkinsfile"
+  },
+  {
+    "name": "ansible-pipeline",
+    "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
+    "branch": "main",
+    "jenkinsfile": "ansible/Jenkinsfile"
   }
 ]
