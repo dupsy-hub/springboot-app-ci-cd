@@ -4,36 +4,5 @@
     "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
     "branch": "main",
     "jenkinsfile": "terraform/Jenkinsfile"
-  },
-  {
-    "name": "ansible-pipeline",
-    "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
-    "branch": "main",
-    "jenkinsfile": "ansible/Jenkinsfile"
-  },
-  {
-    "name": "continuous-integration-pipeline",
-    "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
-    "branch": "main",
-    "jenkinsfile": "continuous-integration/Jenkinsfile"
-  },
-  {
-    "name": "continuous-integration-continuous-delivery-pipeline",
-    "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
-    "branch": "main",
-    "jenkinsfile": "continuous-integration-continuous-delivery/Jenkinsfile"
-  },
-  {
-    "name": "continuous-integration-continuous-deployment-pipeline",
-    "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
-    "branch": "main",
-    "jenkinsfile": "continuous-integration-continuous-deployment/Jenkinsfile"
-  },
-  {
-    "name": "continuous-deployment-pipeline",
-    "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
-    "branch": "main",
-    "jenkinsfile": "continuous-deployment/Jenkinsfile"
   }
-  
 ]
