@@ -22,5 +22,11 @@
     "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
     "branch": "main",
     "jenkinsfile": "continuous-integration-continuous-delivery/Jenkinsfile"
+  },
+  {
+    "name": "continuous-integration-continuous-deployment-pipeline",
+    "repo": "https://github.com/dupsy-hub/springboot-app-ci-cd.git",
+    "branch": "main",
+    "jenkinsfile": "continuous-integration-continuous-deployment/Jenkinsfile"
   }
 ]
