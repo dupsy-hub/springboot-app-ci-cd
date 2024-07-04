@@ -6,15 +6,15 @@ pipeline {
 
     parameters {
         string(name: 'IMAGE_TAG', defaultValue: "${BUILD_ID}", description: 'Docker image tag')
-        string(name: 'DOCKER_IMAGE', defaultValue: 'dupsy/springboot-app-ci-cd-pipeline', description: 'Docker image name')
+        string(name: 'DOCKER_IMAGE', defaultValue: 'dupsy/springboot-app-ci-cd', description: 'Docker image name')
         string(name: 'CONTAINER_NAME', defaultValue: 'springboot-app', description: 'Docker container name')
-        string(name: 'REGISTRY', defaultValue: 'dupsy/springboot-app-ci-cd-pipeline', description: 'Your Docker registry repository Name')
+        string(name: 'REGISTRY', defaultValue: 'dupsy/springboot-app-ci-cd', description: 'Your Docker registry repository Name')
         string(name: 'REGISTRY_CREDENTIAL', defaultValue: 'dockerhub_creds', description: 'Docker registry credentials id')
         string(name: 'GITHUB_CREDENTIAL', defaultValue: 'jenkins_github_creds', description: 'Github access credentials id')
         string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/dupsy-hub/springboot-app-ci-cd.git', description: 'Github repository url')
         string(name: 'GITHUB_BRANCH', defaultValue: 'main', description: 'Github branch for your build')
         string(name: 'SONARQUBE_SERVER_NAME', defaultValue: 'sonarqube_server', description: 'Name for your sonarqube server')
-        string(name: 'NEXUS_URL', defaultValue: '44.203.190.71:8081', description: 'Your Nexus URL')
+        string(name: 'NEXUS_URL', defaultValue: '107.23.106.237:8081', description: 'Your Nexus URL')
         string(name: 'NEXUS_CREDENTIAL', defaultValue: 'jenkins_nexus_creds', description: 'Your Nexus Credentials')
     }
 
