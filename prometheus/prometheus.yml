@@ -4,7 +4,7 @@ global:
 scrape_configs:
   - job_name: 'node_exporter'
     static_configs:
-      - targets: ['54.88.130.57:9100', '3.95.13.12:9100'] # Replace these 2 IP addresses with your monolitjic_server and microservice_server IP's
+      - targets: ['34.203.228.220', '184.73.147.25'] # Replace these 2 IP addresses with your monolitjic_server and microservice_server IP's
 
   - job_name: 'blackbox_exporter'
     metrics_path: /probe
@@ -12,12 +12,12 @@ scrape_configs:
       module: [http_2xx_springboot_app]  
     static_configs:
       - targets:
-        - http://3.95.13.12:8081 # Replace IP address with monolithic_server IP. PORT STAYS SAME
-        - http://54.88.130.57:8081 # Replace IP address with microservice_server IP. PORT STAYS SAME
+        - http://184.73.147.25:8081 # Replace IP address with monolithic_server IP. PORT STAYS SAME
+        - http://34.203.228.220:8081 # Replace IP address with microservice_server IP. PORT STAYS SAME
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
-        replacement: 54.174.119.162:9115  # Replace the IP address with your prometheus_server IP address. Port stays the same
+        replacement: 44.203.148.193:9090  # Replace the IP address with your prometheus_server IP address. Port stays the same
