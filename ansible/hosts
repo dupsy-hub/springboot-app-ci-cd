@@ -6,3 +6,6 @@
 54.226.63.5 ansible_ssh_user=ec2-user ansible_private_key_file=server-key   ## Nexus_server
 3.86.146.108 ansible_ssh_user=ec2-user ansible_private_key_file=server-key    ## Sonarqube_server
 54.88.130.57 ansible_ssh_user=ec2-user ansible_private_key_file=server-key    ## Microservice_server
+54.174.119.162 ansible_ssh_user=ec2-user ansible_private_key_file=server-key    ## Prometheus_server
+44.202.47.69 ansible_ssh_user=ec2-user ansible_private_key_file=server-key    ## Grafana_server
+
