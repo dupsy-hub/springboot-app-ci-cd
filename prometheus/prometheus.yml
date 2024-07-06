@@ -20,4 +20,4 @@ scrape_configs:
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
-        replacement: 44.203.148.193:9090  # Replace the IP address with your prometheus_server IP address. Port stays the same
+        replacement: 44.203.148.193:9115  # Replace the IP address with your prometheus_server IP address. Port stays the same
