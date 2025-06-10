@@ -105,5 +105,3 @@ DevOps Engineer | AWS Certified | Terraform | Jenkins | Docker | Kubernetes
 ---
 
 
-
-
